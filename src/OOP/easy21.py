@@ -18,19 +18,6 @@ class Easy21():
         print("\t\t\t\t\tPlayer draws first card")
         self.player.start()
 
-    def step(self, s: State=None, a: Action=None) -> Tuple[State, int]:
-        """Takes as input a state s, and an action a, and returns a sample of the 
-        next state s′ (which may be terminal if the game is finished) and reward r."""
-        dealer_card, player_sum = s
-        
-        if a == Action.HIT:
-            # Draw card
-            reward = self.player.hit()
-        elif a == Action.STICK:
-            reward = self.player.stick()
-            
-        return ((self.dealer.cards[0], self.player.sum), reward)
-
     def finish(self):
         """Decide winner of game."""
         print(f"Player: Sum: {self.player.sum}")

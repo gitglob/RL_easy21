@@ -27,12 +27,6 @@ class Card:
     def __repr__(self):
         # Custom representation for debugging
         return f"({self.value} , {self.color})"
-        
-@dataclass
-class State:
-    """Dealer’s first card 1–10 and the player’s sum 1–21"""
-    d_first_card: Card
-    p_sum: int
 
 class Deck():
     def __init__(self):
@@ -128,7 +122,8 @@ class Gambler():
               f"Busted:   {self.busted}\n")
 
 class Player(Gambler):
-    def __init__(self):
+    def __init__(self, rl=False):
+        self.rl = rl
         super().__init__()
 
     def hit(self):
