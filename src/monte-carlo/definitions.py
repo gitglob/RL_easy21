@@ -36,19 +36,16 @@ class State:
     
 class Deck():
     def __init__(self):
-        pass
+        # List of card values
+        self.cards_values = list(range(1, 11))
+        self.red_cards = [f"r{value}" for value in self.cards_values]
+        self.black_cards = [f"b{value}" for value in self.cards_values]
+        self.cards = self.red_cards + self.black_cards
 
     @property
     def all_cards(self):
-        # List of card values
-        card_values = list(range(1, 11))
-
-        # Creating the list of cards
-        red_cards = [f"r{value}" for value in card_values]
-        black_cards = [f"b{value}" for value in card_values]
-
         # Return red and black cards into a single list
-        return red_cards + black_cards
+        return self.cards
 
     @staticmethod
     def draw_card():
@@ -82,6 +79,7 @@ class Gambler():
         self.sum = 0
         self.cards = []
         self.actions = []
+        self.sums = []
         self.card = None
         self._stick = False
 
@@ -100,51 +98,63 @@ class Gambler():
     def start(self):
         self.card = Deck.draw_first_card()
         self.cards.append(self.card)
-        self.actions.append('h')
         self.sum += self.card.value
+        self.sums.append(self.sum)
+        self.actions.append('h')
 
     def hit(self):
-        pass
+        # Draw card
+        self.card = Deck.draw_card()
+        self.cards.append(self.card)
+        self.actions.append('h')
+
+        # Adjust sum based on value and color
+        if self.card.color == "b":
+            self.sum += self.card.value
+        else:
+            self.sum -= self.card.value
+
+        # Keep partial sums
+        self.sums.append(self.sum)
 
     def stick(self):
         self.actions.append('s')
         self._stick = True
+        self.sums.append(self.sum)
 
     def reset(self):
         self.sum = 0
+        self.sums = []
+        self.card = None
         self.cards = []
         self.actions = []
-        self.card = None
         self._stick = False
 
 class Player(Gambler):
-    def __init__(self, rl=False):
-        self.rl = rl
+    def __init__(self):
         super().__init__()
+        self.sums = []
 
-    def hit(self):
-        self.card = Deck.draw_card()
-        self.cards.append(self.card)
-        self.actions.append('h')
+    def step(self, s: State=None, a: str=None) -> State:
+        """Takes as input a state s, and an action a, and returns a sample of the 
+        next state s′ (which may be terminal if the game is finished) and reward r."""
 
-        if self.card.color == "b":
-            self.sum += self.card.value
-        else:
-            self.sum -= self.card.value
+        if a == 'h':
+            self.hit()
+        elif a == 's':
+            self.stick()
 
+        new_state = State(s.d_first_card, self.sum)
+            
+        return new_state
+    
 class Dealer(Gambler):
     def __init__(self):
         super().__init__()
 
-    def hit(self):
-        self.card = Deck.draw_card()
-        self.actions.append('h')
-        self.cards.append(self.card)
-
-        if self.card.color == "b":
-            self.sum += self.card.value
-        else:
-            self.sum -= self.card.value
-
+    def step(self):
+        # Stick if in [17, 21]
         if self.sum >= 17 and self.sum <= 21:
             self.stick()
+        else:
+            self.hit()

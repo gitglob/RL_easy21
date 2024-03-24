@@ -7,7 +7,7 @@ from definitions import State, Deck
 
 
 class StateHistory():
-    """Stores state visits and returns policies at specific states."""
+    """Stores state visits."""
     def __init__(self):
         deck = Deck()
         self.state_counts = {(card_id, p_sum): 0
@@ -15,12 +15,15 @@ class StateHistory():
                              for p_sum in range(1, 22)}
 
     def add(self, s: State):
+        """Increases the count of a state's visits."""
         self.state_counts[s.to_key()] += 1
 
     def get(self, s: State):
+        """Returns the number of visits of a specific state."""
         return self.state_counts[s.to_key()]
 
 class StateActionHistory():
+    """Stores visits of state-action pairs."""
     def __init__(self):
         deck = Deck()
         self.state_counts = {(d_first_card_id, p_sum, action): 0
@@ -29,11 +32,11 @@ class StateActionHistory():
                              for action in ['h', 's']}
         
     def add(self, s: State, a: str):
-        """Increases the count of the State-Action pair"""
+        """Increases the visit count of a State-Action pair."""
         self.state_counts[(str(s.d_first_card), s.p_sum, a)] += 1
         
     def get(self, s: State, a: str):
-        """Returns the Action Value Function Q(s, a)"""
+        """Returns the visit count of a State-Action pair."""
         return self.state_counts[(str(s.d_first_card), s.p_sum, a)]
         
 class ActionValueFunctions():
@@ -49,7 +52,7 @@ class ActionValueFunctions():
         the current state-action pairs N."""
         Q = self.avfs[(str(s.d_first_card), s.p_sum, a)]
         Q = Q + (1/N) * (G - Q)
-        self.avfs[(s.d_first_card, s.p_sum, a)] = Q
+        self.avfs[(str(s.d_first_card), s.p_sum, a)] = Q
         
     def get(self, s: State, a: str):
         """Returns the Action Value Function Q(s, a)"""
@@ -68,7 +71,11 @@ class ActionValueFunctions():
         return greedy_action
     
     def max(self) -> str:
-        """Returns the Action that maximizes Q in the current state"""
+        """
+        Returns the best Action Value Functions for every state.
+        
+        Basically, picks the highest Q out of the 2 possible actions for every state.
+        """
         # Initialize a 3D NumPy array
         q_values_array = np.zeros((10, 21, 2)) # 10 21 2
 
@@ -86,14 +93,16 @@ class ActionValueFunctions():
         return best_actions_q_values
     
 def greedy_policy(N_s, a_star, N0=100):
-    """e-Greedy Exploration implementation, where N_s is the number of
-    times a state has been visited, and a_star is the current action-value function"""
-    e = N0/(N0 + N_s)
-    prob = e/2 + 1 - e
+    """
+    e-Greedy Exploration implementation, where N_s is the number of
+    times a state has been visited, and a_star is the optimal action.
+    
+    The lower N0 is, the less exploration we do, and the faster we
+    we converge to basically always selecting the greedy, best action.
+    """
+    e = N0 / (N0 + N_s)  # Exploration rate
+    prob = e / 2 + 1 - e  # Probability of choosing the optimal action
 
-    if a_star == 'h':
-        explore_action = 's'
-    else:
-        explore_action = 'h'
+    explore_action = 's' if a_star == 'h' else 'h'
         
     return a_star if random.random() < prob else explore_action

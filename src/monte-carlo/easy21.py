@@ -1,9 +1,9 @@
 # Standard
-from typing import Tuple
+from typing import Tuple, Literal
 # External
 # Local
 from definitions import Deck, State
-from definitions import Player, Dealer
+from definitions import Player, Dealer, Gambler
 
 
 class Easy21():
@@ -11,6 +11,7 @@ class Easy21():
         self.deck = Deck()
         self.player = Player()
         self.dealer = Dealer()
+        self.turn: Literal['p', 'd'] = None
 
     @property
     def first_state(self) -> State:
@@ -19,44 +20,50 @@ class Easy21():
     @property
     def over(self) -> bool:
         c1 = self.player.busted
-        c2 = self.player.sticked and self.dealer.busted
-        c3 = self.player.sticked and self.dealer.sticked
-        return True if c1 or c2 or c3 else False
+        c2 = self.player.sticked and (self.dealer.sum > self.player.sum)
+        c3 = self.player.sticked and self.dealer.busted
+        c4 = self.player.sticked and self.dealer.sticked
+        return True if c1 or c2 or c3 or c4 else False
+    
+    @property
+    def whose_turn(self) -> Gambler:
+        return self.turn
         
     def start(self):
-        # Reset players
+        # Restart game
         self.player.reset()
         self.dealer.reset()
-        # Start
-        self.dealer.start()    
         self.player.start()
+        self.dealer.start()
+        self.turn = 'p'
 
-    def step(self, s: State=None, a: str=None) -> Tuple[State, int]:
-        """Takes as input a state s, and an action a, and returns a sample of the 
-        next state s′ (which may be terminal if the game is finished) and reward r."""
+    def player_step(self, s, a):
+        if a == 's':
+            self.turn = 'd'
+        return self.player.step(s, a)
 
-        if a == 'h':
-            self.player.hit()
-        elif a == 's':
-            self.player.stick()
 
-        reward = self.decide_reward()
-        new_state = State(self.dealer.cards[0], self.player.sum)
-            
-        return (new_state, reward)
+    def dealer_step(self):
+        self.dealer.step()
 
-    def decide_reward(self):
-        """Decide winner of game."""
-        if self.player.busted:
-            reward = -1
-        elif self.dealer.busted:
-            reward = +1
-        elif self.player.sticked and self.dealer.sticked:
-            if self.dealer.sum > self.player.sum:
+    def decide_rewards(self):
+        """Decide rewards for an episode."""
+        rewards = []
+
+        # Iterate over every player sum
+        for player_sum in self.player.sums:
+            if player_sum < 1 or player_sum > 21:
                 reward = -1
-            elif self.player.sum > self.dealer.sum:
+            elif self.dealer.busted:
                 reward = +1
-        else:
-            reward = 0
+            else:
+                if self.dealer.sum > player_sum:
+                    reward = -1
+                elif player_sum > self.dealer.sum:
+                    reward = +1
+                else:
+                    reward = 0
 
-        return reward
+            rewards.append(reward)
+
+        return rewards

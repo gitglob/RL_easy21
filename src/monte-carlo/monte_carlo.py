@@ -1,6 +1,8 @@
 # Standard
-import random
+import argparse
+import time
 # External
+from numpy import mean
 # Local
 from easy21 import Easy21
 from mc_functions import StateHistory, StateActionHistory, ActionValueFunctions, greedy_policy
@@ -22,42 +24,48 @@ class MonteCarlo():
         actions = []
         rewards = []
 
-        # Initial reward
-        reward = 0
+        # Initial state
+        self.game.start()
 
         # Randomly initialize the state and action
         state = self.game.first_state
-        action = 'h'
 
         # Run the game until it is over
         while not self.game.over:
-            # Get the number of state visits and the best action at this state
-            state_count = self.H_s.get(state)
-            greedy_action = self.Qs.argmax(state)
+            if self.game.whose_turn == 'p':
+                # Get the number of state visits and the best action at this state
+                state_count = self.H_s.get(state)
+                greedy_action = self.Qs.argmax(state)
 
-            # Decide an action based on the greedy policy
-            action = greedy_policy(state_count, greedy_action)
+                # Decide an action based on the greedy policy
+                action = greedy_policy(state_count, greedy_action)
 
-            # Save the states, actions, rewards
-            states.append(state)
-            actions.append(action)
-            rewards.append(reward)
+                # Save the states, actions
+                states.append(state)
+                actions.append(action)
 
-            # Do 1 step in the game
-            state, reward = self.game.step(state, action)
+                # Player does 1 step and get possible reward
+                state = self.game.player_step(state, action)
+            else:
+                # The dealer is part of the environment
+                self.game.dealer_step()
+
+        # Decide reward
+        rewards = self.game.decide_rewards()
         
         # Return the list of states, actions, and rewards during this episode
+        # print(f"Player {self.game.player.sum} vs. Dealer {self.game.dealer.sum}")
         return states, actions, rewards
 
-    def run(self):
+    def run(self, num_episodes: int=1000, num_iter: int=1000):
         # Simulate X number of episodes
-        num_episodes = 10000
-        for i in range(num_episodes):    
-            # Initial state
-            self.game.start()
-
+        start_time = time.time()
+        prev_time = time.time()
+        episode_lengths = []
+        for i in range(num_episodes):
             # Run episode
             states, actions, rewards = self.simulate_episode()
+            episode_lengths.append(len(actions))
 
             # Iterate over every state and action in he episode
             for state, action in zip(states, actions):
@@ -66,21 +74,43 @@ class MonteCarlo():
                                             if x[0] == state and x[1] == action)
                 G = rewards[first_occurrence_idx]
                 
-                # Update state (s_counts, policies) and state-action (sa_counts, rewards) history
+                # Update state (s_counts, policies) and state-action (sa_counts, rewards) counts
                 self.H_s.add(state)
                 self.H_sa.add(state, action)
-                self.Qs.add(state, action, G, self.H_sa.get(state, action))
+
+                # Update the action value functions
+                N = self.H_sa.get(state, action)
+                self.Qs.add(state, action, G, N)
 
             # For large runs, print out the progress intermittently
-            if i % 100 == 0:
-                print(f'Processed {i} episodes...')
+            if i % num_iter == 0:
+                elapsed_time = time.time() - start_time
+                print(f'Processed {i} episodes in {elapsed_time:.2f} sec...')
+                avg_duration = (time.time() - prev_time) / num_iter
+                print("\tAverage episode:"
+                      f"\t\tduration: {avg_duration:.5f}"
+                      f"\t\tlength: {mean(episode_lengths)}")
+                prev_time = time.time()
 
-        plot_results(self.Qs)
+        plot_results(self.Qs, num_episodes)
 
 
 def main():
+    # Initialize the parser
+    parser = argparse.ArgumentParser(description='Run the Monte Carlo simulation.')
+
+    # Adding a positional argument
+    parser.add_argument('episodes', 
+                        type=int, 
+                        nargs='?', 
+                        help='Number of episodes to run', 
+                        default=1000)
+
+    # Parsing the arguments
+    args = parser.parse_args()
+
     MC = MonteCarlo()
-    MC.run()
+    MC.run(args.episodes)
 
 if __name__ == "__main__":
     main()
