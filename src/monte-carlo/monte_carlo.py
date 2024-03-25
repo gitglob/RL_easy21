@@ -45,13 +45,8 @@ class MonteCarlo():
                 actions.append(action)
 
                 # Player does 1 step and get possible reward
-                state = self.game.player_step(state, action)
-            else:
-                # The dealer is part of the environment
-                self.game.dealer_step()
-
-        # Decide reward
-        rewards = self.game.decide_rewards()
+                state, reward = self.game.step(state, action)
+                rewards.append(reward)
         
         # Return the list of states, actions, and rewards during this episode
         # print(f"Player {self.game.player.sum} vs. Dealer {self.game.dealer.sum}")
@@ -80,7 +75,7 @@ class MonteCarlo():
 
                 # Update the action value functions
                 N = self.H_sa.get(state, action)
-                self.Qs.add(state, action, G, N)
+                self.Qs.update(state, action, G, N)
 
             # For large runs, print out the progress intermittently
             if i % num_iter == 0:

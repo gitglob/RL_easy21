@@ -37,33 +37,28 @@ class Easy21():
         self.dealer.start()
         self.turn = 'p'
 
-    def player_step(self, s, a):
+    def step(self, s, a):
+        new_state = self.player.step(s, a)
         if a == 's':
-            self.turn = 'd'
-        return self.player.step(s, a)
+            while not self.over:
+                self.dealer.step()
 
+        reward = self.decide_reward()
+        
+        return new_state, reward
 
-    def dealer_step(self):
-        self.dealer.step()
-
-    def decide_rewards(self):
-        """Decide rewards for an episode."""
-        rewards = []
-
-        # Iterate over every player sum
-        for player_sum in self.player.sums:
-            if player_sum < 1 or player_sum > 21:
+    def decide_reward(self):
+        """Decide reward for a step of an episode."""
+        if self.player.sum < 1 or self.player.sum > 21:
+            reward = -1
+        elif self.dealer.busted:
+            reward = +1
+        else:
+            if self.dealer.sum > self.player.sum:
                 reward = -1
-            elif self.dealer.busted:
+            elif self.player.sum > self.dealer.sum:
                 reward = +1
             else:
-                if self.dealer.sum > player_sum:
-                    reward = -1
-                elif player_sum > self.dealer.sum:
-                    reward = +1
-                else:
-                    reward = 0
+                reward = 0
 
-            rewards.append(reward)
-
-        return rewards
+        return reward

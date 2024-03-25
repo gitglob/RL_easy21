@@ -47,7 +47,7 @@ class ActionValueFunctions():
                      for p_sum in range(1, 22)
                      for action in ['h', 's']}
         
-    def add(self, s: State, a: str, G: int, N: int):
+    def update(self, s: State, a: str, G: int, N: int):
         """Increases the AVF value based on the episode score G and the count of
         the current state-action pairs N."""
         Q = self.avfs[(str(s.d_first_card), s.p_sum, a)]
