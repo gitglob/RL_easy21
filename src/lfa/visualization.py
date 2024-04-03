@@ -7,14 +7,14 @@ from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 # Local
-from td_learning_functions import ActionValueFunctions
+from lfa_functions import FeatureVector
 
 
-def plot_results(Qs: ActionValueFunctions, num_episodes: int, lamda: float):
+def plot_results(Fs: FeatureVector, num_episodes: int, lamda: float):
     """Plots the optimal value functions in a 3D plot."""    
     # Extract the best action-value functions, along with the states
     # Basically, the best value function out of the 2, corresponding to the 2 possible actions
-    best_qs = Qs.max()
+    best_qs = Fs.max()
     
     # Extract the xs, ys, zs for the 3d plot
     xs = np.arange(1, 11)

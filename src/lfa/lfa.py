@@ -1,17 +1,15 @@
 # Standard
 import argparse
 import time
-import random
 # External
-from numpy import mean
 # Local
 from easy21 import Easy21
-from td_learning_functions import StateHistory, EligibilityTraces, ActionValueFunctions
-from td_learning_functions import td_error, greedy_policy
+from lfa_functions import EligibilityTraces, FeatureVector
+from lfa_functions import td_error, greedy_policy
 from visualization import plot_results
 
    
-class SarlsaLamda():
+class LFA():
     def __init__(self, gamma: float=0.98, lamda: float=0.5, alpha: float=0.01):
         self.game = Easy21()
 
@@ -21,9 +19,8 @@ class SarlsaLamda():
         self.alpha = alpha # Learning rate
 
         # Initialize state and state-action history
-        self.H_s = StateHistory()
-        self.Qs = ActionValueFunctions(alpha)
         self.Es = EligibilityTraces(gamma, lamda)
+        self.FV = FeatureVector(alpha)
 
     def run(self, 
             num_episodes: int=1000, 
@@ -44,29 +41,29 @@ class SarlsaLamda():
 
             # Randomly initialize the state and action
             state = self.game.first_state
-            action = 'h' if random.random() < 0.5 else 's'
+            action = greedy_policy(self.FV.argmax(state))
 
             # Run the game until it is over
             while not self.game.over:
-                # Get the number of state visits and the best action at this state
-                state_count = self.H_s.get(state)
-                greedy_action = self.Qs.argmax(state)
+                # Get the best action at this state
+                greedy_action = self.FV.argmax(state)
 
                 # Decide an action based on the greedy policy
-                new_action = greedy_policy(state_count, greedy_action)
+                new_action = greedy_policy(greedy_action)
 
                 # 1 game step and get reward
                 new_state, reward = self.game.step(state, action)
 
                 # Get TD-error
-                Q = self.Qs.get(state, action)
-                new_Q = self.Qs.get(new_state, new_action)
+                Q = self.FV.get_Q(state, action)
+                new_Q = self.FV.get_Q(new_state, new_action)
                 delta = td_error(reward, Q, new_Q, self.gamma)
 
-                # Update state counts, eligibility traces, action value functions
-                self.Es.update(state, action)
-                self.Qs.update(state, action, delta, self.Es)
-                self.H_s.add(state)
+                # Update eligibility trace
+                self.Es.update(self.FV.get_gradQ(state, action))
+
+                # Update parameter vector
+                self.FV.update(state, action, delta, self.Es)
 
                 # Update state and action
                 state = new_state
@@ -80,12 +77,12 @@ class SarlsaLamda():
                 print(f"\tAverage episode duration: {avg_duration:.5f}")
                 prev_time = time.time()
 
-        plot_results(self.Qs, num_episodes, self.lamda)
+        plot_results(self.FV, num_episodes, self.lamda)
 
 
 def main():
     # Initialize the parser
-    parser = argparse.ArgumentParser(description='Run the Sarsa(lamda) simulation.')
+    parser = argparse.ArgumentParser(description='Run the Sarsa(lamda) with Linear Function Approximation simulation.')
 
     # Adding a positional argument
     parser.add_argument('episodes', 
@@ -103,8 +100,8 @@ def main():
     # Parsing the arguments
     args = parser.parse_args()
 
-    TD = SarlsaLamda(lamda=args.lamda)
-    TD.run(args.episodes)
+    lfa = LFA(lamda=args.lamda)
+    lfa.run(args.episodes)
 
 if __name__ == "__main__":
     main()
