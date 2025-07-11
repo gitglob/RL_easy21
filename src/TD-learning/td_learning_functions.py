@@ -23,6 +23,11 @@ class StateHistory():
         return self.state_counts[s.to_key()]
 
 class EligibilityTraces():
+    """
+    Eligibility Traces show how eligible for update every state-action pair is.
+    The most recently visited state-action pairs have the highest eligibility (1),
+    and they decay over time.
+    """
     def __init__(self, gamma, lamda):
         self.gamma = gamma
         self.lamda = lamda
@@ -121,5 +126,12 @@ def greedy_policy(N_s, a_star, N0=100):
     return a_star if random.random() < prob else explore_action
 
 def td_error(reward, Q, Q_next, gamma):
+    """
+    TD Error basically estimates how wrong our current 
+    prediction of the estimated future rewards is.
+    
+    Q is the estimated future rewards right now.
+    reward + gamma*Q_next is the actual future rewards.
+    """
     delta = reward + gamma*Q_next - Q
     return delta

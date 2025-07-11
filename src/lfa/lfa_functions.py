@@ -123,11 +123,11 @@ class FeatureVector():
     
 def greedy_policy(a_star, e=0.05):
     """
-    e-Greedy Exploration implementation, where N_s is the number of
-    times a state has been visited, and a_star is the optimal action.
+    e-Greedy Exploration implementation.
     
-    The lower N0 is, the less exploration we do, and the faster we
-    we converge to basically always selecting the greedy, best action.
+    Args:
+        a_star (str): The optimal action ('h' for hit, 's' for stick)
+        e (float): Exploration probability (default 0.05)
     """
     prob = e / 2 + 1 - e  # Probability of choosing the optimal action
 
